@@ -1,13 +1,9 @@
 # How does Disagreement Help Generalization against Label Corruption? 
-ICML'19: How does Disagreement Help Generalization against Label Corruption? (Pytorch implementation).
+ICML'19: [How does Disagreement Help Generalization against Label Corruption?](https://arxiv.org/abs/1901.04215) (PyTorch implementation).
 
 ========
 
-This is the code for the paper:
-[How does Disagreement Help Generalization against Label Corruption?](https://arxiv.org/abs/1901.04215)  
-Xingrui Yu, Bo Han, Jiangchao Yao, Gang Niu, Ivor W. Tsang, Masashi Sugiyama.  
-
-## Run Co-teaching+ on benchmark datasets (MNIST, CIFAR-10, CIFAR-100, and Tiny-Imagenet) with Pytorch >= 0.4.1
+## Run Co-teaching+ on benchmark datasets (MNIST, CIFAR-10, CIFAR-100, and Tiny-Imagenet) with PyTorch >= 0.4.1
 ```bash
 sh script/mnist.sh
 sh script/cifar10.sh
@@ -16,7 +12,7 @@ sh script/news.sh
 sh script/imagenet_tiny.sh
 ```
 
-If you find this code useful in your research then please cite  
+If you find this code useful in your research, please cite  
 ```bash
 @inproceedings{yu2019does,
   title={How does Disagreement Help Generalization against Label Corruption?},
