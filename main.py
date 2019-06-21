@@ -28,13 +28,13 @@ parser.add_argument('--noise_type', type = str, help='[pairflip, symmetric]', de
 parser.add_argument('--num_gradual', type = int, default = 10, help='how many epochs for linear drop rate. This parameter is equal to Ek for lambda(E) in the paper.')
 parser.add_argument('--dataset', type = str, help = 'mnist, cifar10, cifar100, or imagenet_tiny', default = 'mnist')
 parser.add_argument('--n_epoch', type=int, default=200)
-parser.add_argument('--optimizer', type = str, help='[adam, sgd_imagenet_tiny]', default='adam')
+parser.add_argument('--optimizer', type = str, default='adam')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--print_freq', type=int, default=50)
-parser.add_argument('--num_workers', type=int, default=2, help='how many subprocesses to use for data loading')
+parser.add_argument('--num_workers', type=int, default=4, help='how many subprocesses to use for data loading')
 parser.add_argument('--epoch_decay_start', type=int, default=80)
 parser.add_argument('--model_type', type = str, help='[coteaching, coteaching_plus]', default='coteaching_plus')
-parser.add_argument('--fr_type', type = str, help='forget rate type, selected from [linear_first, dual_linear]', default='linear_first')
+parser.add_argument('--fr_type', type = str, help='forget rate type', default='type_1')
 
 args = parser.parse_args()
 
@@ -178,33 +178,16 @@ def adjust_learning_rate(optimizer, epoch):
         param_group['lr']=alpha_plan[epoch]
         param_group['betas']=(beta1_plan[epoch], 0.999) 
        
-def adjust_learning_rate_imagenet_tiny(optimizer, epoch):
-    """decrease the learning rate at 100 and 150 epoch"""
-    lr = args.lr
-    if epoch >= 100:
-        lr /= 10
-    if epoch >= 150:
-        lr /= 10
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-
 # define drop rate schedule
-def gen_forget_rate(fr_type='linear_first'):
-    # define drop rate schedule
-    if fr_type=='linear_first':
-        # 1. linear in the first 20 epoch, then constant (noise_rate).
-        #              _______
-        #           /
+def gen_forget_rate(fr_type='type_1'):
+    if fr_type=='type_1':
         rate_schedule = np.ones(args.n_epoch)*forget_rate
         rate_schedule[:args.num_gradual] = np.linspace(0, forget_rate, args.num_gradual)
 
-    if fr_type=='dual_linear':
-        # 2. dual linear
-        #       /(smaller slop)
-        #      /(larger slop)
-        rate_schedule = np.ones(args.n_epoch)*forget_rate
-        rate_schedule[:args.num_gradual] = np.linspace(0, forget_rate, args.num_gradual) 
-        rate_schedule[args.num_gradual:] = np.linspace(forget_rate, 2*forget_rate, args.n_epoch-args.num_gradual)
+    #if fr_type=='type_2':
+    #    rate_schedule = np.ones(args.n_epoch)*forget_rate
+    #    rate_schedule[:args.num_gradual] = np.linspace(0, forget_rate, args.num_gradual) 
+    #    rate_schedule[args.num_gradual:] = np.linspace(forget_rate, 2*forget_rate, args.n_epoch-args.num_gradual)
         
     return rate_schedule
 
@@ -345,16 +328,13 @@ def main():
     if args.dataset == 'cifar100':
         clf1 = CNN(n_outputs=num_classes)
     if args.dataset=='news':
-        clf1 = NewsNet(weights_matrix=train_dataset.weights_matrix, context_size=1000, hidden_size=300, num_classes=num_classes)
+        clf1 = NewsNet(weights_matrix=train_dataset.weights_matrix, num_classes=num_classes)
     if args.dataset=='imagenet_tiny':
         clf1 = PreActResNet18(num_classes=200)
 
     clf1.cuda()
     print(clf1.parameters)
-    if args.optimizer == 'adam':
-        optimizer1 = torch.optim.Adam(clf1.parameters(), lr=learning_rate)
-    if args.optimizer == 'sgd_imagenet_tiny':
-        optimizer1 = torch.optim.SGD(clf1.parameters(), lr=learning_rate, momentum=0.9, weight_decay=1e-4)
+    optimizer1 = torch.optim.Adam(clf1.parameters(), lr=learning_rate)
     
     if args.dataset == 'mnist':
         clf2 = MLPNet()
@@ -363,16 +343,13 @@ def main():
     if args.dataset == 'cifar100':
         clf2 = CNN(n_outputs=num_classes)
     if args.dataset=='news':
-        clf2 = NewsNet(weights_matrix=train_dataset.weights_matrix, context_size=1000, hidden_size=300, num_classes=num_classes)
+        clf2 = NewsNet(weights_matrix=train_dataset.weights_matrix, num_classes=num_classes)
     if args.dataset=='imagenet_tiny':
         clf2 = PreActResNet18(num_classes=200)
 
     clf2.cuda()
     print(clf2.parameters)
-    if args.optimizer == 'adam':
-        optimizer2 = torch.optim.Adam(clf2.parameters(), lr=learning_rate)
-    if args.optimizer == 'sgd_imagenet_tiny':
-        optimizer2 = torch.optim.SGD(clf2.parameters(), lr=learning_rate, momentum=0.9, weight_decay=1e-4)
+    optimizer2 = torch.optim.Adam(clf2.parameters(), lr=learning_rate)
 
     with open(txtfile, "a") as myfile:
         myfile.write('epoch train_acc1 train_acc2 test_acc1 test_acc2\n')
@@ -392,12 +369,10 @@ def main():
         # train models
         clf1.train()
         clf2.train()
-        if args.optimizer == 'adam':
-            adjust_learning_rate(optimizer1, epoch)
-            adjust_learning_rate(optimizer2, epoch)
-        if args.optimizer == 'sgd_imagenet_tiny':
-            adjust_learning_rate_imagenet_tiny(optimizer1, epoch)
-            adjust_learning_rate_imagenet_tiny(optimizer2, epoch)
+
+        adjust_learning_rate(optimizer1, epoch)
+        adjust_learning_rate(optimizer2, epoch)
+
         train_acc1, train_acc2 = train(train_loader, epoch, clf1, optimizer1, clf2, optimizer2)
         # evaluate models
         test_acc1, test_acc2 = evaluate(test_loader, clf1, clf2)
