@@ -3,7 +3,7 @@ ICML'19: [How does Disagreement Help Generalization against Label Corruption?](h
 
 ========
 
-## Run Co-teaching+ on benchmark datasets (MNIST, CIFAR-10, CIFAR-100, and Tiny-Imagenet) with PyTorch >= 0.4.1
+## Run Co-teaching+ on benchmark datasets with PyTorch >= 0.4.1
 ```bash
 sh script/mnist.sh
 sh script/cifar10.sh
