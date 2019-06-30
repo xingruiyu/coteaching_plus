@@ -114,7 +114,6 @@ if args.dataset=='cifar100':
 if args.dataset=='news':
     init_epoch=0
     train_dataset = NewsGroups(root='./data/',
-                                dataset_type='multiple',  
                                 train=True, 
                                 transform=transforms.ToTensor(),
                                 noise_type=args.noise_type,
@@ -122,7 +121,6 @@ if args.dataset=='news':
                                 )
     
     test_dataset = NewsGroups(root='./data/',
-                               dataset_type='multiple',  
                                train=False, 
                                transform=transforms.ToTensor(),
                                noise_type=args.noise_type,
